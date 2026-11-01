@@ -15,11 +15,22 @@
 
         <main>
             <div id="dropzone">
-                <p>Drag & drop an image or <span>click to upload</span></p>
+                <p>Drag & drop an image or <span class="bold">click to upload</span></p>
                 <input type="file" id="fileInput" accept="image/*" hidden>
             </div>
 
             <div id="results" class="hidden">
+                <div class="results-header">
+                    <div class="preview-container">
+                        <p>Original Image</p>
+                        <img id="imagePreview" src="" alt="Preview">
+                    </div>
+                    <div class="action-buttons">
+                        <button id="saveBtn" class="btn-secondary">Save Palette</button>
+                        <button id="newFileBtn" class="btn-primary">New File</button>
+                    </div>
+                </div>
+
                 <div class="palette-grid" id="paletteGrid">
                     <!-- Colors will be injected here -->
                 </div>

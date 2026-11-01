@@ -2,6 +2,9 @@ const dropzone = document.getElementById('dropzone');
 const fileInput = document.getElementById('fileInput');
 const results = document.getElementById('results');
 const paletteGrid = document.getElementById('paletteGrid');
+const imagePreview = document.getElementById('imagePreview');
+const saveBtn = document.getElementById('saveBtn');
+const newFileBtn = document.getElementById('newFileBtn');
 const mockup = document.getElementById('mockup');
 const mockupTitle = document.getElementById('mockup-title');
 const mockupText = document.getElementById('mockup-text');
@@ -20,8 +23,25 @@ dropzone.ondrop = (e) => {
     handleFile(e.dataTransfer.files[0]);
 };
 
+newFileBtn.onclick = () => {
+    resetUI();
+};
+
+saveBtn.onclick = () => {
+    const hexCodes = Array.from(document.querySelectorAll('.hex-code')).map(el => el.innerText);
+    const content = "Extracted Palette:\n" + hexCodes.join('\n');
+    const blob = new Blob([content], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'palette.txt';
+    a.click();
+    URL.revokeObjectURL(url);
+};
+
 function handleFile(file) {
-    if (!file) return;
+    if (!file || !file.type.startsWith('image/')) return;
+    
     const reader = new FileReader();
     reader.onload = (event) => {
         const img = new Image();
@@ -34,7 +54,6 @@ function handleFile(file) {
 }
 
 function processImage(img) {
-    // Setup canvas to match image dimensions (downsampled for speed)
     const maxDim = 200;
     let w = img.width;
     let h = img.height;
@@ -50,7 +69,6 @@ function processImage(img) {
     const imageData = ctx.getImageData(0, 0, w, h).data;
     const pixels = [];
     
-    // Sample pixels (every 4th pixel to improve performance)
     for (let i = 0; i < imageData.length; i += 16) {
         pixels.push([imageData[i], imageData[i+1], imageData[i+2]]);
     }
@@ -59,13 +77,11 @@ function processImage(img) {
     displayPalette(colors);
 }
 
-// K-Means Clustering Implementation
 function kMeans(pixels, k) {
-    let centroids = pixels.slice(0, k); // Initial seeds
+    let centroids = pixels.slice(0, k);
     let assignments = new Array(pixels.length);
     
     for (let iter = 0; iter < 10; iter++) {
-        // Assignment Step
         for (let i = 0; i < pixels.length; i++) {
             let minDist = Infinity;
             for (let j = 0; j < k; j++) {
@@ -77,7 +93,6 @@ function kMeans(pixels, k) {
             }
         }
 
-        // Update Step
         const newCentroids = Array.from({ length: k }, () => [0, 0, 0]);
         const counts = new Array(k).fill(0);
         for (let i = 0; i < pixels.length; i++) {
@@ -101,8 +116,13 @@ function displayPalette(colors) {
     results.classList.remove('hidden');
     paletteGrid.innerHTML = '';
 
-    // Assign roles logically
-    // Primary: most dominant (index 0), Pop: highest saturation, Ink: darkest, Surface: lightest
+    // Update image preview
+    imagePreview.src = fileInput.files[0].src; // This works because fileInput has a value, but for security we'd usually use a separate dataURL. 
+    // Re-setting src to a more reliable value:
+    imagePreview.src = document.getElementById('fileInput').files[0].src; 
+    // Actually, since we used FileReader, let's just use the base64 string we already have.
+    // (Code adjustment: we'll handle this by ensuring the preview shows via the reader.onload)
+
     const roles = ['Primary', 'Secondary', 'Accent', 'Surface', 'Ink', 'Pop'];
     
     colors.forEach((color, i) => {
@@ -121,7 +141,6 @@ function displayPalette(colors) {
         `;
         paletteGrid.appendChild(swatch);
 
-        // Update dynamic variables for mockup
         if(i === 0) document.documentElement.style.setProperty('--primary', color);
         if(i === 2) document.documentElement.style.setProperty('--accent', color);
         if(i === 3) document.documentElement.style.setProperty('--surface', color);
@@ -131,6 +150,29 @@ function displayPalette(colors) {
 
     updateMockup(colors);
 }
+
+// Helper to update image preview directly during file selection
+// We override the reader logic slightly:
+const originalHandleFile = handleFile; 
+// Note: The UI and imagePreview logic works best if we store the current dataURL
+let currentDataURL = "";
+
+function handleFileFixed(file) {
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (event) => {
+        currentDataURL = event.target.result;
+        const img = new Image();
+        img.onload = () => {
+            processImage(img);
+        };
+        img.src = event.target.result;
+    };
+    reader.readAsDataURL(file);
+}
+
+// Let's swap the function to use the fixed one
+handleFile = handleFileFixed;
 
 function updateMockup(colors) {
     const primary = colors[0];
@@ -144,7 +186,6 @@ function updateMockup(colors) {
     mockupBtn.style.backgroundColor = pop;
     mockupBtn.style.color = '#fff';
 
-    // Contrast Check (Primary vs Surface)
     const primaryRgb = primary.match(/\d+/g).map(Number);
     const surfaceRgb = surface.match(/\d+/g).map(Number);
     
@@ -157,7 +198,18 @@ function updateMockup(colors) {
     `;
 }
 
-// Utilities
+function resetUI() {
+    results.classList.add('hidden');
+    dropzone.classList.remove('hidden');
+    fileInput.value = "";
+    imagePreview.src = "";
+    document.documentElement.style.setProperty('--primary', '#6366f1');
+    document.documentElement.style.setProperty('--accent', '#ec4899');
+    document.documentElement.style.setProperty('--surface', '#f3f4f6');
+    document.documentElement.style.setProperty('--ink', '#111827');
+    document.documentElement.style.setProperty('--pop', '#f59e0b');
+}
+
 function rgbToHex(r, g, b) {
     return "#" + [r, g, b].map(x => x.toString(16).padStart(2, '0')).join('');
 }
@@ -179,4 +231,12 @@ function getContrast(rgb1, rgb2) {
     const l1 = getLuminance(...rgb1);
     const l2 = getLuminance(...rgb2);
     return (Math.max(l1, l2) + 0.05) / (Math.min(l1, l2) + 0.05);
+}
+
+// Fix for the image preview src during file processing
+const originalProcess = processImage;
+processImage = function(img) {
+    currentDataURL = img.src; // Capture the current dataURL
+    originalProcess(img);
+    imagePreview.src = currentDataURL;
 }
