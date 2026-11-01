@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Palette from a Photo</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Palette from a Photo</h1>
+            <p>Drop an image to extract a professional color system.</p>
+        </header>
+
+        <main>
+            <div id="dropzone">
+                <p>Drag & drop an image or <span>click to upload</span></p>
+                <input type="file" id="fileInput" accept="image/*" hidden>
+            </div>
+
+            <div id="results" class="hidden">
+                <div class="palette-grid" id="paletteGrid">
+                    <!-- Colors will be injected here -->
+                </div>
+
+                <div class="mockup-container">
+                    <h2>Live Mockup Preview</h2>
+                    <div id="mockup" class="mockup-card">
+                        <h3 id="mockup-title">Experience the Future</h3>
+                        <p id="mockup-text">This is a live preview of your extracted palette. The background, text, and buttons are dynamically updated based on your photo's dominant colors.</p>
+                        <button id="mockup-btn">Get Started</button>
+                    </div>
+                    <div id="contrast-report"></div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <canvas id="processingCanvas" style="display:none;"></canvas>
+    <script src="script.js"></script>
+</body>
+</html>
