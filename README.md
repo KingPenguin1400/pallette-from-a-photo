@@ -4,4 +4,4 @@
 
 *Your brand already exists somewhere in the world. Find it.*
 
-![pic of site](pallette-snapshots/site.png)
+![pic of site](pallette-snapshots/newsite.png)
